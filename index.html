@@ -43,6 +43,26 @@ summary {
 </table>
 </details>
 
+<details id="detail_projects_io">
+<table id="projects_io">
+    <summary>Total Items Out for Each Project</summary>
+    <tr>
+        <th>Project ID</th>
+        <th>Items</th>
+    </tr>
+</table>
+</details>
+
+<details id="detail_projects_itd">
+<table id="projects_itd">
+    <summary>Total Items To Do for Each Project</summary>
+    <tr>
+        <th>Project ID</th>
+        <th>Items</th>
+    </tr>
+</table>
+</details>
+
 <details id="detail_downloaders_t">
     <summary>Total Projects Contributed by Each Downloader</summary>
     <table id="downloaders_t">
@@ -138,6 +158,8 @@ async function getProjectList() {
 async function processProjects() {
     const project_domainBytes = [];
     const project_itemsDone = [];
+    const project_itemsOut = [];
+    const project_itemsTodo = [];
     const downloader_tally = {};
     const downloader_bytes = {};
     const downloader_count = {};
@@ -149,6 +171,12 @@ async function processProjects() {
 
     const detail_projectItemsDone = document.getElementById("detail_projects_id");
     const table_projectItemsDone = document.getElementById("projects_id");
+
+    const detail_projectItemsOut = document.getElementById("detail_projects_io");
+    const table_projectItemsOut = document.getElementById("projects_io");
+    
+    const detail_projectItemsTodo = document.getElementById("detail_projects_itd");
+    const table_projectItemsTodo = document.getElementById("projects_itd");
 
     const detail_downloaderTally = document.getElementById("detail_downloaders_t");
     const table_downloaderTally = document.getElementById("downloaders_t");
@@ -175,6 +203,20 @@ async function processProjects() {
             project_itemsDone.push({
                 project,
                 total_items: data.total_items_done
+            });
+        }
+
+        if (data?.total_items_out) {
+            project_itemsOut.push({
+                project,
+                total_items: data.total_items_out
+            });
+        }
+
+        if (data?.total_items_todo) {
+            project_itemsTodo.push({
+                project,
+                total_items: data.total_items_todo
             });
         }
 
@@ -226,6 +268,40 @@ async function processProjects() {
         } else {
             while (table_projectItemsDone.rows.length > 1) {
                 table_projectItemsDone.deleteRow(1);
+            }
+        }
+    });
+
+
+    project_itemsOut.sort((a, b) => b.total_items - a.total_items);
+
+    detail_projectItemsOut.addEventListener('toggle', () => {
+        if (detail_projectItemsOut.open) {
+            for (const result of project_itemsOut) {
+                const row = table_projectItemsOut.insertRow();
+                row.insertCell().textContent = result.project;
+                row.insertCell().textContent = result.total_items.toLocaleString();
+            }
+        } else {
+            while (table_projectItemsOut.rows.length > 1) {
+                table_projectItemsOut.deleteRow(1);
+            }
+        }
+    });
+
+
+    project_itemsTodo.sort((a, b) => b.total_items - a.total_items);
+
+    detail_projectItemsTodo.addEventListener('toggle', () => {
+        if (detail_projectItemsTodo.open) {
+            for (const result of project_itemsTodo) {
+                const row = table_projectItemsTodo.insertRow();
+                row.insertCell().textContent = result.project;
+                row.insertCell().textContent = result.total_items.toLocaleString();
+            }
+        } else {
+            while (table_projectItemsTodo.rows.length > 1) {
+                table_projectItemsTodo.deleteRow(1);
             }
         }
     });
