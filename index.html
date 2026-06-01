@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<head>
+<style>
+* {
+    margin-bottom: 1em;
+}
+table, th, td {
+    border: 1px solid;
+}
+summary {
+    user-select: none;
+}
+.hidden {
+    visibility: hidden;
+}
+</style>
+</head>
+<body>
+<p id="progress">Getting: 0/?</p>
+<!-- tables -->
+<div class="hidden">
+<details>
+<table id="projects_mb">
+    <summary>Total Bytes Downloaded for Each Project</summary>
+    <tr>
+        <th>Project ID</th>
+        <th>Total Size</th>
+    </tr>
+    <tr>
+        <td>test</td>
+        <td>67</td>
+    </tr>
+</table>
+</details>
+
+<details>
+<table id="projects_id">
+    <summary>Total Items Done for Each Project</summary>
+    <tr>
+        <th>Project ID</th>
+        <th>Items</th>
+    </tr>
+    <tr>
+        <td>test</td>
+        <td>67</td>
+    </tr>
+</table>
+</details>
+
+<details>
+    <summary>Total Projects Contributed by Each Downloader</summary>
+    <table id="downloaders_t">
+        <tr>
+            <th>Downloader</th>
+            <th>Total Projects Contributed</th>
+        </tr>
+        <tr>
+            <td>test</td>
+            <td>67</td>
+        </tr>
+    </table>
+</details>
+
+<details>
+    <summary>Total Bytes Downloaded by Each Downloader</summary>
+    <table id="downloaders_mb">
+        <tr>
+            <th>Downloader</th>
+            <th>Total Bytes Downloaded</th>
+        </tr>
+        <tr>
+            <td>test</td>
+            <td>67</td>
+        </tr>
+    </table>
+</details>
+
+<details>
+    <summary>Total Items Contributed by Each Downloader</summary>
+    <table id="downloaders_c">
+        <tr>
+            <th>Downloader</th>
+            <th>Total Items Contributed</th>
+        </tr>
+        <tr>
+            <td>test</td>
+            <td>67</td>
+        </tr>
+    </table>
+</details>
+</div>
+<script>
+// at project ids
+var PROJECTS = [];
+const HTML_PROGRESS = document.getElementById("progress");
+const HTML_HIDDEN = document.querySelector(".hidden");
+
+function formatBytes(bytes) {
+    if (bytes === 0) return "0 B";
+
+    const units = ["B", "KB", "MB", "GB", "TB", "PB"];
+    const k = 1024;
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+    return (bytes / Math.pow(k, i)).toFixed(2) + " " + units[i];
+}
+
+async function loadJson(s) {
+  try {
+    const data = await s.json();
+    return data;
+  } catch (error) {
+    console.error('Error loading JSON:', error);
+    return 0;
+  }
+}
+
+async function getProjectData(project_id) {
+    const urls = [
+        `https://v1.api.tracker.archiveteam.org/${project_id}/stats.json`,
+        // `http://web.archive.org/web/2id_/https://legacy-api.arpa.li/${project_id}/stats.json`
+    ];
+
+    for (const url of urls) {
+        try {
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (err) {
+            console.log(url);
+            console.warn(`Failed ${url}:`, err);
+        }
+    }
+
+    return null;
+}
+
+async function getProjectList() {
+    const response = await fetch('/projects');
+    const text = await response.text();
+
+    const entries = text
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+
+    PROJECTS = entries;
+}
+
+async function processProjects() {
+    const project_domainBytes = [];
+    const project_itemsDone = [];
+    const downloader_tally = {};
+    const downloader_bytes = {};
+    const downloader_count = {};
+
+    var prog = 0;  // rock
+    const table_projectMostBytes = document.getElementById("projects_mb");
+    const table_projectItemsDone = document.getElementById("projects_id");
+    const table_downloaderTally = document.getElementById("downloaders_t");
+    const table_downloaderBytes = document.getElementById("downloaders_mb");
+    const table_downloaderCount = document.getElementById("downloaders_c");
+
+    for (const project of PROJECTS) {
+        prog++;
+        HTML_PROGRESS.textContent = `Getting: ${prog}/${PROJECTS.length}`;
+        const data = await getProjectData(project);
+
+        if (data?.domain_bytes?.data) {
+            project_domainBytes.push({
+                project,
+                bytes: data.domain_bytes.data
+            });
+        }
+
+        if (data?.total_items_done) {
+            project_itemsDone.push({
+                project,
+                total_items: data.total_items_done
+            });
+        }
+
+        if (data?.downloader_bytes) {
+            for (const [id, bytes] of Object.entries(data.downloader_bytes)) {
+                // track count
+                downloader_tally[id] = (downloader_tally[id] || 0) + 1;
+                // track bytes downloaded
+                downloader_bytes[id] = (downloader_bytes[id] || 0) + bytes;
+            }
+        }
+
+        if (data?.downloader_count) {
+            for (const [id, items] of Object.entries(data.downloader_count)) {
+                downloader_count[id] = (downloader_count[id] || 0) + items;
+            }
+        }
+    }
+
+
+    project_domainBytes.sort((a, b) => b.bytes - a.bytes);
+
+    while (table_projectMostBytes.rows.length > 1) {
+        table_projectMostBytes.deleteRow(1);
+    }
+    for (const result of project_domainBytes) {
+        const row = table_projectMostBytes.insertRow();
+        row.insertCell().textContent = result.project;
+        row.insertCell().textContent = formatBytes(result.bytes);
+    }
+
+
+    project_itemsDone.sort((a, b) => b.total_items - a.total_items);
+
+    while (table_projectItemsDone.rows.length > 1) {
+        table_projectItemsDone.deleteRow(1);
+    }
+    for (const result of project_itemsDone) {
+        const row = table_projectItemsDone.insertRow();
+        row.insertCell().textContent = result.project;
+        row.insertCell().textContent = result.total_items.toLocaleString();
+    }
+
+
+    const sorted_downloaderTally = Object.entries(downloader_tally)
+        .map(([id, count]) => ({ id, count }))
+        .sort((a, b) => b.count - a.count);
+
+    while (table_downloaderTally.rows.length > 1) {
+        table_downloaderTally.deleteRow(1);
+    }
+    for (const user of sorted_downloaderTally) {
+        const row = table_downloaderTally.insertRow();
+        row.insertCell().textContent = user.id;
+        row.insertCell().textContent = user.count;
+    }
+
+
+    const sorted_downloaderBytes = Object.entries(downloader_bytes)
+        .map(([id, bytes]) => ({ id, bytes }))
+        .sort((a, b) => b.bytes - a.bytes);
+
+    while (table_downloaderBytes.rows.length > 1) {
+        table_downloaderBytes.deleteRow(1);
+    }
+    for (const user of sorted_downloaderBytes) {
+        const row = table_downloaderBytes.insertRow();
+        row.insertCell().textContent = user.id;
+        row.insertCell().textContent = formatBytes(user.bytes);
+    }
+
+
+    const sorted_downloaderCount = Object.entries(downloader_count)
+        .map(([id, items]) => ({ id, items }))
+        .sort((a, b) => b.items - a.items);
+
+    while (table_downloaderCount.rows.length > 1) {
+        table_downloaderCount.deleteRow(1);
+    }
+    for (const user of sorted_downloaderCount) {
+        const row = table_downloaderCount.insertRow();
+        row.insertCell().textContent = user.id;
+        row.insertCell().textContent = user.items.toLocaleString();
+    }
+
+    HTML_HIDDEN.classList.remove("hidden");
+    HTML_PROGRESS.remove();
+}
+
+getProjectList().then(processProjects).catch(console.error);
+</script>
+</body>
