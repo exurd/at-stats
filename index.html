@@ -33,6 +33,16 @@ summary {
 </table>
 </details>
 
+<details id="detail_projects_it">
+<table id="projects_it">
+    <summary>Total Items for Each Project</summary>
+    <tr>
+        <th>Project ID</th>
+        <th>Items</th>
+    </tr>
+</table>
+</details>
+
 <details id="detail_projects_id">
 <table id="projects_id">
     <summary>Total Items Done for Each Project</summary>
@@ -157,6 +167,7 @@ async function getProjectList() {
 
 async function processProjects() {
     const project_domainBytes = [];
+    const project_itemsTotal = [];
     const project_itemsDone = [];
     const project_itemsOut = [];
     const project_itemsTodo = [];
@@ -168,6 +179,9 @@ async function processProjects() {
 
     const detail_projectMostBytes = document.getElementById("detail_projects_mb");
     const table_projectMostBytes = document.getElementById("projects_mb");
+
+    const detail_projectItemsTotal = document.getElementById("detail_projects_it");
+    const table_projectItemsTotal = document.getElementById("projects_it");
 
     const detail_projectItemsDone = document.getElementById("detail_projects_id");
     const table_projectItemsDone = document.getElementById("projects_id");
@@ -196,6 +210,13 @@ async function processProjects() {
             project_domainBytes.push({
                 project,
                 bytes: data.domain_bytes.data
+            });
+        }
+
+        if (data?.total_items) {
+            project_itemsTotal.push({
+                project,
+                total_items: data.total_items
             });
         }
 
@@ -251,6 +272,23 @@ async function processProjects() {
             // remove entries
             while (table_projectMostBytes.rows.length > 1) {
                 table_projectMostBytes.deleteRow(1);
+            }
+        }
+    });
+
+
+    project_itemsTotal.sort((a, b) => b.total_items - a.total_items);
+
+    detail_projectItemsTotal.addEventListener('toggle', () => {
+        if (detail_projectItemsTotal.open) {
+            for (const result of project_itemsTotal) {
+                const row = table_projectItemsTotal.insertRow();
+                row.insertCell().textContent = result.project;
+                row.insertCell().textContent = result.total_items.toLocaleString();
+            }
+        } else {
+            while (table_projectItemsTotal.rows.length > 1) {
+                table_projectItemsTotal.deleteRow(1);
             }
         }
     });
