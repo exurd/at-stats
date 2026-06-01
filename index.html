@@ -118,7 +118,7 @@ async function loadJson(s) {
 async function getProjectData(project_id) {
     const urls = [
         `https://v1.api.tracker.archiveteam.org/${project_id}/stats.json`,
-        // `http://web.archive.org/web/2id_/https://legacy-api.arpa.li/${project_id}/stats.json`
+        `https://legacy-api.arpa.li/${project_id}/stats.json`
     ];
 
     for (const url of urls) {
