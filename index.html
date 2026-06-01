@@ -140,7 +140,7 @@ async function getProjectData(project_id) {
 }
 
 async function getProjectList() {
-    const response = await fetch('/projects');
+    const response = await fetch('./projects');
     const text = await response.text();
 
     const entries = text
