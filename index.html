@@ -23,72 +23,52 @@ summary {
 <p id="progress">Getting: 0/?</p>
 <!-- tables -->
 <div class="hidden">
-<details>
+<details id="detail_projects_mb">
 <table id="projects_mb">
     <summary>Total Bytes Downloaded for Each Project</summary>
     <tr>
         <th>Project ID</th>
         <th>Total Size</th>
     </tr>
-    <tr>
-        <td>test</td>
-        <td>67</td>
-    </tr>
 </table>
 </details>
 
-<details>
+<details id="detail_projects_id">
 <table id="projects_id">
     <summary>Total Items Done for Each Project</summary>
     <tr>
         <th>Project ID</th>
         <th>Items</th>
     </tr>
-    <tr>
-        <td>test</td>
-        <td>67</td>
-    </tr>
 </table>
 </details>
 
-<details>
+<details id="detail_downloaders_t">
     <summary>Total Projects Contributed by Each Downloader</summary>
     <table id="downloaders_t">
         <tr>
             <th>Downloader</th>
             <th>Total Projects Contributed</th>
         </tr>
-        <tr>
-            <td>test</td>
-            <td>67</td>
-        </tr>
     </table>
 </details>
 
-<details>
+<details id="detail_downloaders_mb">
     <summary>Total Bytes Downloaded by Each Downloader</summary>
     <table id="downloaders_mb">
         <tr>
             <th>Downloader</th>
             <th>Total Bytes Downloaded</th>
         </tr>
-        <tr>
-            <td>test</td>
-            <td>67</td>
-        </tr>
     </table>
 </details>
 
-<details>
+<details id="detail_downloaders_c">
     <summary>Total Items Contributed by Each Downloader</summary>
     <table id="downloaders_c">
         <tr>
             <th>Downloader</th>
             <th>Total Items Contributed</th>
-        </tr>
-        <tr>
-            <td>test</td>
-            <td>67</td>
         </tr>
     </table>
 </details>
@@ -163,10 +143,20 @@ async function processProjects() {
     const downloader_count = {};
 
     var prog = 0;  // rock
+
+    const detail_projectMostBytes = document.getElementById("detail_projects_mb");
     const table_projectMostBytes = document.getElementById("projects_mb");
+
+    const detail_projectItemsDone = document.getElementById("detail_projects_id");
     const table_projectItemsDone = document.getElementById("projects_id");
+
+    const detail_downloaderTally = document.getElementById("detail_downloaders_t");
     const table_downloaderTally = document.getElementById("downloaders_t");
+
+    const detail_downloaderBytes = document.getElementById("detail_downloaders_mb");
     const table_downloaderBytes = document.getElementById("downloaders_mb");
+
+    const detail_downloaderCount = document.getElementById("detail_downloaders_c");
     const table_downloaderCount = document.getElementById("downloaders_c");
 
     for (const project of PROJECTS) {
@@ -207,68 +197,96 @@ async function processProjects() {
 
     project_domainBytes.sort((a, b) => b.bytes - a.bytes);
 
-    while (table_projectMostBytes.rows.length > 1) {
-        table_projectMostBytes.deleteRow(1);
-    }
-    for (const result of project_domainBytes) {
-        const row = table_projectMostBytes.insertRow();
-        row.insertCell().textContent = result.project;
-        row.insertCell().textContent = formatBytes(result.bytes);
-    }
+    detail_projectMostBytes.addEventListener('toggle', () => {
+        if (detail_projectMostBytes.open) {
+            // add entries
+            for (const result of project_domainBytes) {
+                const row = table_projectMostBytes.insertRow();
+                row.insertCell().textContent = result.project;
+                row.insertCell().textContent = formatBytes(result.bytes);
+            }
+        } else {
+            // remove entries
+            while (table_projectMostBytes.rows.length > 1) {
+                table_projectMostBytes.deleteRow(1);
+            }
+        }
+    });
 
 
     project_itemsDone.sort((a, b) => b.total_items - a.total_items);
 
-    while (table_projectItemsDone.rows.length > 1) {
-        table_projectItemsDone.deleteRow(1);
-    }
-    for (const result of project_itemsDone) {
-        const row = table_projectItemsDone.insertRow();
-        row.insertCell().textContent = result.project;
-        row.insertCell().textContent = result.total_items.toLocaleString();
-    }
+    detail_projectItemsDone.addEventListener('toggle', () => {
+        if (detail_projectItemsDone.open) {
+            for (const result of project_itemsDone) {
+                const row = table_projectItemsDone.insertRow();
+                row.insertCell().textContent = result.project;
+                row.insertCell().textContent = result.total_items.toLocaleString();
+            }
+        } else {
+            while (table_projectItemsDone.rows.length > 1) {
+                table_projectItemsDone.deleteRow(1);
+            }
+        }
+    });
 
 
     const sorted_downloaderTally = Object.entries(downloader_tally)
         .map(([id, count]) => ({ id, count }))
         .sort((a, b) => b.count - a.count);
 
-    while (table_downloaderTally.rows.length > 1) {
-        table_downloaderTally.deleteRow(1);
-    }
-    for (const user of sorted_downloaderTally) {
-        const row = table_downloaderTally.insertRow();
-        row.insertCell().textContent = user.id;
-        row.insertCell().textContent = user.count;
-    }
+    detail_downloaderTally.addEventListener('toggle', () => {
+        if (detail_downloaderTally.open) {
+            for (const user of sorted_downloaderTally) {
+                const row = table_downloaderTally.insertRow();
+                row.insertCell().textContent = user.id;
+                row.insertCell().textContent = user.count;
+            }
+        } else {
+            while (table_downloaderTally.rows.length > 1) {
+                table_downloaderTally.deleteRow(1);
+            }
+        }
+    });
 
 
     const sorted_downloaderBytes = Object.entries(downloader_bytes)
         .map(([id, bytes]) => ({ id, bytes }))
         .sort((a, b) => b.bytes - a.bytes);
 
-    while (table_downloaderBytes.rows.length > 1) {
-        table_downloaderBytes.deleteRow(1);
-    }
-    for (const user of sorted_downloaderBytes) {
-        const row = table_downloaderBytes.insertRow();
-        row.insertCell().textContent = user.id;
-        row.insertCell().textContent = formatBytes(user.bytes);
-    }
+    detail_downloaderBytes.addEventListener('toggle', () => {
+        if (detail_downloaderBytes.open) {
+            for (const user of sorted_downloaderBytes) {
+                const row = table_downloaderBytes.insertRow();
+                row.insertCell().textContent = user.id;
+                row.insertCell().textContent = formatBytes(user.bytes);
+            }
+        } else {
+            while (table_downloaderBytes.rows.length > 1) {
+                table_downloaderBytes.deleteRow(1);
+            }
+        }
+    });
 
 
     const sorted_downloaderCount = Object.entries(downloader_count)
         .map(([id, items]) => ({ id, items }))
         .sort((a, b) => b.items - a.items);
 
-    while (table_downloaderCount.rows.length > 1) {
-        table_downloaderCount.deleteRow(1);
-    }
-    for (const user of sorted_downloaderCount) {
-        const row = table_downloaderCount.insertRow();
-        row.insertCell().textContent = user.id;
-        row.insertCell().textContent = user.items.toLocaleString();
-    }
+    detail_downloaderCount.addEventListener('toggle', () => {
+        if (detail_downloaderCount.open) {
+            for (const user of sorted_downloaderCount) {
+                const row = table_downloaderCount.insertRow();
+                row.insertCell().textContent = user.id;
+                row.insertCell().textContent = user.items.toLocaleString();
+            }
+        } else {
+            while (table_downloaderCount.rows.length > 1) {
+                table_downloaderCount.deleteRow(1);
+            }
+        }
+    });
+
 
     HTML_HIDDEN.classList.remove("hidden");
     HTML_PROGRESS.remove();
