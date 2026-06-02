@@ -106,6 +106,7 @@ summary {
 <script>
 // at project ids
 var PROJECTS = [];
+var PROJECTS_WAYBACK = [];
 const HTML_PROGRESS = document.getElementById("progress");
 const HTML_HIDDEN = document.querySelector(".hidden");
 
@@ -129,11 +130,19 @@ async function loadJson(s) {
   }
 }
 
-async function getProjectData(project_id) {
-    const urls = [
+async function getProjectData(project_id, wayback_only=false) {
+    let urls = [
         `https://v1.api.tracker.archiveteam.org/${project_id}/stats.json`,
         `https://legacy-api.arpa.li/${project_id}/stats.json`
     ];
+    // clear url list if stats are only in the wayback machine
+    if (wayback_only === true) {
+        urls = [];
+    }
+    // add wayback urls
+    // gosh darn CORS policy
+    urls.push(`https://corsproxy.io/?url=https://web.archive.org/web/2id_/https://legacy-api.arpa.li/${project_id}/stats.json`);
+    urls.push(`https://corsproxy.io/?url=https://web.archive.org/web/2id_/http://tracker.archiveteam.org/${project_id}/stats.json`);
 
     for (const url of urls) {
         try {
@@ -153,8 +162,8 @@ async function getProjectData(project_id) {
     return null;
 }
 
-async function getProjectList() {
-    const response = await fetch('./projects');
+async function getProjectList(url) {
+    const response = await fetch(url);
     const text = await response.text();
 
     const entries = text
@@ -162,7 +171,7 @@ async function getProjectList() {
         .map(line => line.trim())
         .filter(line => line.length > 0);
 
-    PROJECTS = entries;
+    return entries;
 }
 
 async function processProjects() {
@@ -204,7 +213,7 @@ async function processProjects() {
     for (const project of PROJECTS) {
         prog++;
         HTML_PROGRESS.textContent = `Getting: ${prog}/${PROJECTS.length}`;
-        const data = await getProjectData(project);
+        const data = await getProjectData(project, PROJECTS_WAYBACK.includes(project));
 
         if (data?.domain_bytes?.data) {
             project_domainBytes.push({
@@ -405,7 +414,24 @@ async function processProjects() {
     HTML_HIDDEN.classList.remove("hidden");
     HTML_PROGRESS.remove();
 }
+Promise.all([
+    getProjectList('./projects'),
+    getProjectList('./projects_wayback')
+]).then(([projects, wayback]) => {
+    PROJECTS = projects;
 
-getProjectList().then(processProjects).catch(console.error);
+    PROJECTS_WAYBACK = wayback;
+    if (window.location.hash) {
+        var hash = window.location.hash.substring(1);
+        // sometimes adds no time, sometimes takes too much time
+        if (hash === "get_archived_projects") {
+            for (const p of PROJECTS_WAYBACK) {
+                PROJECTS.push(p);
+            }
+        }
+    }
+
+    return processProjects();
+}).catch(console.error);
 </script>
 </body>
