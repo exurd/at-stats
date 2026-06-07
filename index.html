@@ -75,6 +75,8 @@ summary {
 
 <details id="detail_downloaders_t">
     <summary>Total Projects Contributed by Each Downloader</summary>
+    <em>Hover over the nicknames to see which projects they contributed to.</em>
+    <br>
     <table id="downloaders_t">
         <tr>
             <th>Downloader</th>
@@ -181,6 +183,7 @@ async function processProjects() {
     const project_itemsOut = [];
     const project_itemsTodo = [];
     const downloader_tally = {};
+    const downloader_tally_str = {};
     const downloader_bytes = {};
     const downloader_count = {};
 
@@ -254,6 +257,9 @@ async function processProjects() {
             for (const [id, bytes] of Object.entries(data.downloader_bytes)) {
                 // track count
                 downloader_tally[id] = (downloader_tally[id] || 0) + 1;
+                // add project to downloader id's string
+                if (!downloader_tally_str[id]) { downloader_tally_str[id] = ""; }
+                downloader_tally_str[id] = downloader_tally_str[id] + project + ", ";
                 // track bytes downloaded
                 downloader_bytes[id] = (downloader_bytes[id] || 0) + bytes;
             }
@@ -362,7 +368,10 @@ async function processProjects() {
         if (detail_downloaderTally.open) {
             for (const user of sorted_downloaderTally) {
                 const row = table_downloaderTally.insertRow();
-                row.insertCell().textContent = user.id;
+                var user_el = row.insertCell();
+                user_el.textContent = user.id;
+                // add project string to title
+                user_el.title = downloader_tally_str[user.id].replace(/, $/, "");
                 row.insertCell().textContent = user.count;
             }
         } else {
